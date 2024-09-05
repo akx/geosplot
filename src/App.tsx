@@ -59,6 +59,19 @@ function assignFeatures(
   }
 }
 
+function makeDropHandler(setter: (s: string) => void) {
+  return (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer?.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setter(e.target?.result as string);
+    };
+    reader.readAsText(file);
+  };
+}
+
 function App() {
   const [geojsonString, setGeojsonString] = React.useState("");
   const [featureData, setFeatureData] = React.useState("");
@@ -113,16 +126,20 @@ function App() {
       </MapContainer>
       <div className="p-2">
         <textarea
-          placeholder="GeoJSON data"
+          placeholder="GeoJSON data (supports drag and drop)"
           value={geojsonString}
           onChange={(e) => setGeojsonString(e.target.value)}
           className="w-full h-64 border border-purple-500 p-2"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={makeDropHandler(setGeojsonString)}
         />
         <textarea
-          placeholder="Feature data (TSV)"
+          placeholder="Feature data (CSV/TSV); supports drag and drop. No headers, please!"
           value={featureData}
           onChange={(e) => setFeatureData(e.target.value)}
           className="w-full h-64 border border-purple-500 p-2"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={makeDropHandler(setFeatureData)}
         />
         <div className="grid grid-cols-2">
           <label>
@@ -147,6 +164,12 @@ function App() {
             />
           </label>
         </div>
+        {features ? (
+          <div>Parsed {Object.keys(features).length} features</div>
+        ) : null}
+        {geojson && isFeatureCollection(geojson) ? (
+          <div>Parsed {geojson.features.length} features from GeoJSON data</div>
+        ) : null}
       </div>
     </div>
   );
